@@ -14,9 +14,7 @@ def test_defaults_representative_fields():
 
 def test_env_overrides_str_int_bool(monkeypatch: pytest.MonkeyPatch):
     # Override a string
-    monkeypatch.setenv(
-        "MAVEN_CENTRAL_BASE_URL", "https://example.invalid/search"
-    )
+    monkeypatch.setenv("MAVEN_CENTRAL_BASE_URL", "https://example.invalid/search")
     # Override an int
     monkeypatch.setenv("HTTP_TIMEOUT_SECONDS", "25")
     # Override a bool
