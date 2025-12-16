@@ -26,6 +26,10 @@ Notes:
 
 Early development. Interfaces and behavior may change prior to the first tagged release.
 
+## Contributing
+
+See `CONTRIBUTING.md` for development standards and the contributor workflow.
+
 ## License
 
 MIT. See `LICENSE` for details.
