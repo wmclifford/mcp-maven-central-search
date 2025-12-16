@@ -1,0 +1,39 @@
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Python cache / build artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+.coverage.*
+dist/
+build/
+*.egg-info/
+.eggs/
+.mypy_cache/
+.pyright/
+.ruff_cache/
+
+# OS / editor / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Git / tooling
+.git/
+*.log
+
+# Node (if ever used for tooling)
+node_modules/
+
+# Docker / local dev
+*.local
+.env
+.env.*
