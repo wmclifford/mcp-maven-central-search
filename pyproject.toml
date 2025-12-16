@@ -1,0 +1,76 @@
+[build-system]
+requires = ["hatchling>=1.25.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mcp-maven-central-search"
+version = "0.0.0"
+description = "MCP server to query Maven Central metadata (planning scaffold)."
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.11"
+authors = [
+    { name = "wmclifford" }
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/wmclifford/mcp-maven-central-search"
+Repository = "https://github.com/wmclifford/mcp-maven-central-search.git"
+
+# Hatch build config: explicitly select no packages for now (planning scaffold)
+[tool.hatch.build.targets.wheel]
+only-include = []
+
+[tool.hatch.build.targets.sdist]
+only-include = []
+
+# uv dependency groups
+[dependency-groups]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
+    "ruff",
+    "pyright",
+    "respx",
+]
+http = []
+auth = []
+
+# Ruff minimal configuration
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+ignore = []
+
+# Pytest configuration
+[tool.pytest.ini_options]
+addopts = "-q --cov --cov-report=term-missing"
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+# Coverage configuration
+[tool.coverage.run]
+branch = true
+source = ["mcp_maven_central_search"]
+
+[tool.coverage.report]
+fail_under = 0
+show_missing = true
+skip_covered = true
+
+# Pyright minimal configuration
+[tool.pyright]
+include = ["mcp_maven_central_search"]
+typeCheckingMode = "basic"
+reportMissingImports = "warning"
+reportUnusedImport = "warning"
+pythonVersion = "3.11"
+
+# uv project settings: do not treat this repo as a package yet
+[tool.uv]
+package = false
