@@ -12,7 +12,10 @@ requires-python = ">=3.11"
 authors = [
     { name = "wmclifford" }
 ]
-dependencies = []
+dependencies = [
+    "pydantic>=2.7.0",
+    "pydantic-settings>=2.2.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/wmclifford/mcp-maven-central-search"
