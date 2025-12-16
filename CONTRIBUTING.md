@@ -1,6 +1,6 @@
 # Contributing & Development Standards
 
-This repository follows a PR‑based workflow and a minimal, explicit toolchain. Please read this guide before opening a
+This repository follows a PR-based workflow and a minimal, explicit toolchain. Please read this guide before opening a
 PR.
 
 ## Tooling standards
@@ -33,7 +33,7 @@ These commands must succeed before opening a PR.
 
 ## Branching & PR workflow
 
-This repo uses a feature‑branch + PR workflow by default.
+This repo uses a feature-branch + PR workflow by default.
 
 1. Create a feature branch from `main` (example):
     - `git checkout -b plan-0.3-development-standards`
