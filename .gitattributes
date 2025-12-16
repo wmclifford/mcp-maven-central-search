@@ -1,0 +1,12 @@
+* text=auto eol=lf
+
+# Normalize common text files
+*.md text
+*.txt text
+*.py text
+
+# Ensure shell scripts (if any later) use LF
+*.sh text eol=lf
+
+# Treat lockfiles as text if added later
+*.lock text
