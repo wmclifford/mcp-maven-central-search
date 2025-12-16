@@ -2,7 +2,8 @@
 
 ## Purpose
 
-`mcp-maven-central-search` is an MCP server (STDIO first) that provides reliable, machine-friendly access to Maven Central metadata for use by AI agents (and optionally humans via GUI/TUI).
+`mcp-maven-central-search` is an MCP server (STDIO first) that provides reliable, machine-friendly access to Maven
+Central metadata for use by AI agents (and optionally humans via GUI/TUI).
 
 Primary capabilities:
 
@@ -26,16 +27,18 @@ These decisions are **non-negotiable for v1** unless explicitly revisited via a 
 * Dependencies: **declared-only** (no transitive resolution)
 * Latest version semantics: **exclude prereleases by default**
 
-  * SNAPSHOT, alpha, beta, rc, milestone, etc.
+    * SNAPSHOT, alpha, beta, rc, milestone, etc.
 * Coordinates: **`groupId:artifactId` only** in v1
 
-  * Support for packaging/classifier planned later
+    * Support for packaging/classifier planned later
 * Caching: **included in v1** (in-memory async TTL)
 * Language/runtime: **Python 3.x**
 * MCP framework: **FastMCP**
 * HTTP client: **httpx + asyncio**
 * Models & validation: **pydantic + pydantic-settings**
 * Packaging/tooling: **uv**
+* Lockfile policy: `uv.lock` is committed to the repository and must be updated/committed when dependency resolution
+  changes.
 * Testing: **pytest (+ pytest-asyncio)** with coverage **>= 80%**
 * Logging: **stderr only** (never stdout)
 * License: **MIT**
@@ -48,9 +51,9 @@ The following are explicitly out of scope for the initial release:
 
 * Full Maven dependency resolution
 
-  * Parent POM inheritance
-  * BOM import
-  * `dependencyManagement` resolution across parents
+    * Parent POM inheritance
+    * BOM import
+    * `dependencyManagement` resolution across parents
 * Persistent caching (disk, Redis, etc.)
 * HTTP / Streamable HTTP transport
 * Authentication or authorization mechanisms
@@ -65,14 +68,14 @@ The system is intentionally split into **transport-neutral core logic** and **tr
 
 * Core logic:
 
-  * Maven Central interaction
-  * Version semantics
-  * POM parsing
-  * Caching
+    * Maven Central interaction
+    * Version semantics
+    * POM parsing
+    * Caching
 * Transport adapters:
 
-  * MCP STDIO server (v1)
-  * Streamable HTTP (vNext)
+    * MCP STDIO server (v1)
+    * Streamable HTTP (vNext)
 
 This separation ensures that adding new transports does not affect business logic.
 
@@ -105,19 +108,19 @@ Configuration is implemented using **pydantic-settings** and is fully overridabl
 
 * `MAVEN_CENTRAL_BASE_URL`
 
-  * Default: `https://search.maven.org/solrsearch/select`
+    * Default: `https://search.maven.org/solrsearch/select`
 * `MAVEN_CENTRAL_REMOTE_CONTENT_BASE_URL`
 
-  * Default: `https://search.maven.org/remotecontent`
+    * Default: `https://search.maven.org/remotecontent`
 * `HTTP_TIMEOUT_SECONDS`
 
-  * Default: 10
+    * Default: 10
 * `HTTP_MAX_RETRIES`
 
-  * Default: 2
+    * Default: 2
 * `HTTP_CONCURRENCY`
 
-  * Default: 10–20 (via semaphore)
+    * Default: 10–20 (via semaphore)
 
 ### Cache settings
 
@@ -165,26 +168,26 @@ All externally visible data structures are explicitly modeled using **pydantic**
 
 * `MavenCoordinate`
 
-  * `group_id: str`
-  * `artifact_id: str`
-  * Validation:
+    * `group_id: str`
+    * `artifact_id: str`
+    * Validation:
 
-    * non-empty
-    * reasonable max length
+        * non-empty
+        * reasonable max length
 
 * `ArtifactVersionInfo`
 
-  * `version: str`
-  * `timestamp: Optional[datetime]`
+    * `version: str`
+    * `timestamp: Optional[datetime]`
 
 * `PomDependency`
 
-  * `group_id: str`
-  * `artifact_id: str`
-  * `version: Optional[str]`
-  * `scope: Optional[str]`
-  * `optional: bool = False`
-  * `unresolved_reason: Optional[str]`
+    * `group_id: str`
+    * `artifact_id: str`
+    * `version: Optional[str]`
+    * `scope: Optional[str]`
+    * `optional: bool = False`
+    * `unresolved_reason: Optional[str]`
 
 ### Tool response models
 
@@ -212,7 +215,7 @@ Uses the Solr-style REST API with patterns such as:
 * Free text search
 * `core=gav` queries:
 
-  * `q=g:"<groupId>" AND a:"<artifactId>"`
+    * `q=g:"<groupId>" AND a:"<artifactId>"`
 
 Results are treated as **eventually consistent**.
 
@@ -262,18 +265,18 @@ Common stable markers such as `RELEASE` or `Final` are allowed.
 * `<dependencyManagement>` is **not resolved**
 * Version resolution:
 
-  * Literal versions are returned as-is
-  * Local `<properties>` are resolved
-  * Parent/BOM properties are not resolved
+    * Literal versions are returned as-is
+    * Local `<properties>` are resolved
+    * Parent/BOM properties are not resolved
 
 If a dependency version cannot be resolved:
 
 * `version` is set to `null`
 * `unresolved_reason` is populated with one of:
 
-  * `managed`
-  * `property_unresolved`
-  * `missing`
+    * `managed`
+    * `property_unresolved`
+    * `missing`
 
 Scope filtering is applied after extraction.
 
@@ -375,11 +378,12 @@ Planned security measures:
 * GitHub Actions
 * Steps:
 
-  * lint (ruff)
-  * typecheck (pyright)
-  * tests (pytest)
-  * coverage gate (>= 80%)
-  * build (uv)
+    * lint (ruff)
+    * typecheck (pyright)
+    * tests (pytest)
+    * coverage gate (>= 80%)
+    * build (uv)
+* Issues should be closed only after PR merge and CI success (see Workflow Policy).
 
 ### Docker
 
@@ -395,3 +399,17 @@ Planned security measures:
 * This file is the **authoritative specification** for v1 behavior
 * GitHub Issues reference sections here instead of duplicating detail
 * IDE agents must follow this document and must not expand scope without discussion
+
+---
+
+## Workflow Policy (Repo Governance)
+
+This repository uses a PR-based workflow by default.
+
+- Work is performed on a feature branch and submitted via Pull Request (PR).
+- A GitHub Issue is considered **Done** only when:
+    - the PR has been merged into `main`, and
+    - required CI checks have passed.
+- Agents should not close issues immediately after pushing a branch.
+    - Instead, agents should comment with the PR link + commit SHA and leave the issue open.
+- Epic issues are closed manually by a human once all child issues are merged and verified.

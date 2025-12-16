@@ -21,6 +21,22 @@ You are a coding agent working in the repository **wmclifford/mcp-maven-central-
     - Prefer small, reviewable changes.
     - Avoid dependency changes unless the issue requires it.
 
+## GitHub workflow policy (must follow)
+
+- Default workflow is **PR-based**:
+    - Create a feature branch for the issue work.
+    - Commit to that branch.
+    - Push the branch to origin.
+    - Open a PR unless explicitly instructed not to.
+- Do **not** close the GitHub Issue until the PR is merged into `main` and CI has passed.
+    - After opening a PR, leave the issue open and comment with the PR link + commit SHA.
+
+## Lockfile policy
+
+- `uv.lock` is a committed artifact.
+- If `uv sync` (or other uv operations) create/update `uv.lock`, it must be staged and committed with the change.
+- Do not attempt to “roll back” `uv.lock` changes that are the result of intended dependency updates.
+
 ## Repository conventions
 
 - Prefer structured, explicit outputs (no hidden behavior).
