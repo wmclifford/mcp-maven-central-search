@@ -1,18 +1,11 @@
 import io
 import json
 import logging
-import sys
 from contextlib import redirect_stderr, redirect_stdout
-from pathlib import Path
 
 import pytest
 
-# Ensure repository root is on sys.path so local package is importable in non-editable envs
-REPO_ROOT = Path(__file__).resolve().parents[2]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
-
-from mcp_maven_central_search.logging_config import configure_logging  # noqa: E402
+from mcp_maven_central_search.logging_config import configure_logging
 
 
 @pytest.fixture(autouse=True)

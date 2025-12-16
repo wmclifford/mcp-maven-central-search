@@ -31,6 +31,7 @@ dev = [
     "pytest",
     "pytest-asyncio",
     "pytest-cov",
+    "pytest-pythonpath",
     "ruff",
     "pyright",
     "respx",
@@ -52,6 +53,7 @@ ignore = []
 addopts = "-q --cov --cov-report=term-missing"
 testpaths = ["tests"]
 asyncio_mode = "auto"
+pythonpath = ["."]
 
 # Coverage configuration
 [tool.coverage.run]
