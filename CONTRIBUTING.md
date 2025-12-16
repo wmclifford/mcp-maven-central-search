@@ -18,10 +18,13 @@ Set up the environment and run quality gates locally using `uv`:
 
 ```
 uv sync
+uv run ruff format .
 uv run ruff check .
 uv run pyright
 uv run pytest
 ```
+
+Contributors should always run `ruff format` before committing Python changes.
 
 If enforcing coverage locally, use:
 
