@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Final, Optional, Any
 
 import httpx
+
 # Secure XML parsing
 from defusedxml import ElementTree as ET  # type: ignore[import-untyped]
 
@@ -147,7 +148,7 @@ def _find_project_dependencies(root: Any) -> list[Any]:
 
 
 def _resolve_property(
-        version_value: str, properties: dict[str, str]
+    version_value: str, properties: dict[str, str]
 ) -> tuple[Optional[str], Optional[str]]:
     """Resolve ${prop} placeholders using local properties.
 
