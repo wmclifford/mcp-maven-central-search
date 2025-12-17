@@ -32,14 +32,14 @@ class MavenCentralHttpClient:
     """
 
     def __init__(
-        self,
-        *,
-        base_url: str | None = None,
-        timeout_seconds: Optional[int] = None,
-        max_retries: Optional[int] = None,
-        concurrency: Optional[int] = None,
-        client: httpx.AsyncClient | None = None,
-        sleep_fn: Any | None = None,
+            self,
+            *,
+            base_url: str | None = None,
+            timeout_seconds: Optional[int] = None,
+            max_retries: Optional[int] = None,
+            concurrency: Optional[int] = None,
+            client: httpx.AsyncClient | None = None,
+            sleep_fn: Any | None = None,
     ) -> None:
         s = Settings()
         self._base_url = base_url or s.MAVEN_CENTRAL_BASE_URL
@@ -68,15 +68,15 @@ class MavenCentralHttpClient:
         if exc is not None:
             # Network-level transient errors and timeouts
             if isinstance(
-                exc,
-                (
-                    httpx.ConnectError,
-                    httpx.ReadTimeout,
-                    httpx.WriteError,
-                    httpx.RemoteProtocolError,
-                    httpx.ConnectTimeout,
-                    httpx.NetworkError,
-                ),
+                    exc,
+                    (
+                            httpx.ConnectError,
+                            httpx.ReadTimeout,
+                            httpx.WriteError,
+                            httpx.RemoteProtocolError,
+                            httpx.ConnectTimeout,
+                            httpx.NetworkError,
+                    ),
             ):
                 return True
             return False
@@ -136,7 +136,7 @@ class MavenCentralHttpClient:
             raise last_exc
         if last_response is not None:
             last_response.raise_for_status()
-        # Fallback – should not hit in normal flow
+        # Fallback - should not hit in normal flow
         raise RuntimeError("Request failed without response or exception")
 
 
