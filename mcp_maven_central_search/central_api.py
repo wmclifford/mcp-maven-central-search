@@ -21,6 +21,77 @@ import httpx
 
 from .config import Settings
 
+# --- PLAN-1.1 (Issue #6): Query builder helpers ---
+_MAX_COORD_LEN = 200
+_MAX_QUERY_LEN = 1000
+
+
+def _escape_for_solr_literal(value: str) -> str:
+    """Escape a string for safe embedding inside Solr quoted literals.
+
+    Minimum requirement per issue: escape backslashes and double quotes.
+    """
+    return value.replace("\\", r"\\").replace('"', r"\"")
+
+
+def _validate_non_empty(name: str, value: str, max_len: int) -> str:
+    if not isinstance(value, str):
+        raise ValueError(f"{name} must be a string")
+    s = value.strip()
+    if not s:
+        raise ValueError(f"{name} must be non-empty")
+    if len(s) > max_len:
+        raise ValueError(f"{name} exceeds maximum length {max_len}")
+    return s
+
+
+def build_ga_query(group_id: str, artifact_id: str) -> str:
+    """Build the Solr `q` for group/artifact coordinate search.
+
+    Example:
+        q = g:"com.example" AND a:"my-artifact"
+    """
+    g = _validate_non_empty("group_id", group_id, _MAX_COORD_LEN)
+    a = _validate_non_empty("artifact_id", artifact_id, _MAX_COORD_LEN)
+    g_esc = _escape_for_solr_literal(g)
+    a_esc = _escape_for_solr_literal(a)
+    return f'g:"{g_esc}" AND a:"{a_esc}"'
+
+
+def build_params_for_versions(group_id: str, artifact_id: str, rows: int) -> dict[str, str | int]:
+    """Parameters for version enumeration using core=gav.
+
+    Required keys:
+      - core = gav
+      - q = g:"..." AND a:"..."
+      - rows = <limit>
+      - wt = json
+    """
+    if not isinstance(rows, int) or rows <= 0:
+        raise ValueError("rows must be a positive integer")
+    params: dict[str, str | int] = {
+        "core": "gav",
+        "q": build_ga_query(group_id, artifact_id),
+        "rows": rows,
+        "wt": "json",
+    }
+    return params
+
+
+def build_params_for_search(query: str, rows: int) -> dict[str, str | int]:
+    """Parameters for free-text search.
+
+    Required keys:
+      - q = <user query>
+      - rows = <n>
+      - wt = json
+    """
+    q = _validate_non_empty("query", query, _MAX_QUERY_LEN)
+    if not isinstance(rows, int) or rows <= 0:
+        raise ValueError("rows must be a positive integer")
+    return {"q": q, "rows": rows, "wt": "json"}
+
+
 _logger = logging.getLogger(__name__)
 
 
@@ -32,14 +103,14 @@ class MavenCentralHttpClient:
     """
 
     def __init__(
-            self,
-            *,
-            base_url: str | None = None,
-            timeout_seconds: Optional[int] = None,
-            max_retries: Optional[int] = None,
-            concurrency: Optional[int] = None,
-            client: httpx.AsyncClient | None = None,
-            sleep_fn: Any | None = None,
+        self,
+        *,
+        base_url: str | None = None,
+        timeout_seconds: Optional[int] = None,
+        max_retries: Optional[int] = None,
+        concurrency: Optional[int] = None,
+        client: httpx.AsyncClient | None = None,
+        sleep_fn: Any | None = None,
     ) -> None:
         s = Settings()
         self._base_url = base_url or s.MAVEN_CENTRAL_BASE_URL
@@ -68,15 +139,15 @@ class MavenCentralHttpClient:
         if exc is not None:
             # Network-level transient errors and timeouts
             if isinstance(
-                    exc,
-                    (
-                            httpx.ConnectError,
-                            httpx.ReadTimeout,
-                            httpx.WriteError,
-                            httpx.RemoteProtocolError,
-                            httpx.ConnectTimeout,
-                            httpx.NetworkError,
-                    ),
+                exc,
+                (
+                    httpx.ConnectError,
+                    httpx.ReadTimeout,
+                    httpx.WriteError,
+                    httpx.RemoteProtocolError,
+                    httpx.ConnectTimeout,
+                    httpx.NetworkError,
+                ),
             ):
                 return True
             return False
@@ -162,4 +233,8 @@ __all__ = [
     "MavenCentralHttpClient",
     "get_client",
     "close_client",
+    # PLAN-1.1 exports
+    "build_ga_query",
+    "build_params_for_versions",
+    "build_params_for_search",
 ]
