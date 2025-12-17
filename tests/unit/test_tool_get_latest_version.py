@@ -65,9 +65,8 @@ async def test_include_prereleases_can_select_prerelease_when_highest() -> None:
         )
 
         assert result.latest is not None
-        # With prereleases allowed, rc1 may be selected if ordering deems
-        # it higher than the provided stable versions.
-        assert result.latest.version in {"1.3.0-rc1", "1.2.0"}
+        # With prereleases allowed, the highest prerelease must be selected.
+        assert result.latest.version == "1.3.0-rc1"
         # Ensure flag surfaced
         assert result.stable_filter_applied is False
 

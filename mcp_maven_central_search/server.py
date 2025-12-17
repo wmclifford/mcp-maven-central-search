@@ -3,8 +3,7 @@
 Implements PLAN-5.2 (Issue #20): get_latest_version tool.
 
 Design notes:
-- Transport adapter stays thin; core logic is kept local and re-usable
-  from tests without requiring FastMCP to be importable.
+- Transport adapter stays thin; core logic is kept local and re-usable.
 - Caching uses AsyncTTLCache with in-flight de-duplication.
 - Logging goes to stderr via the central logging config.
 """
@@ -14,8 +13,11 @@ from __future__ import annotations
 import logging
 from typing import Optional, Tuple
 
+from fastmcp import FastMCP
+
 from .cache import AsyncTTLCache, InFlightDeduper
 from .central_api import build_params_for_versions, get_client
+from .config import Settings
 from .logging_config import configure_logging
 from .models import ArtifactVersionInfo, LatestVersionResponse, MavenCoordinate
 from .versioning import is_stable, sort_versions
@@ -29,11 +31,11 @@ configure_logging()
 _CACHE_TTL_SECONDS = 60
 _CACHE_MAX_ENTRIES = 256
 
-_versions_cache: AsyncTTLCache[Tuple[str, str, bool], LatestVersionResponse] = AsyncTTLCache(
+_versions_cache: AsyncTTLCache[Tuple[str, str, bool, int], LatestVersionResponse] = AsyncTTLCache(
     default_ttl_seconds=_CACHE_TTL_SECONDS,
     max_entries=_CACHE_MAX_ENTRIES,
 )
-_deduper: InFlightDeduper[Tuple[str, str, bool], LatestVersionResponse] = InFlightDeduper()
+_deduper: InFlightDeduper[Tuple[str, str, bool, int], LatestVersionResponse] = InFlightDeduper()
 
 
 def _filter_versions(versions: list[str], include_prereleases: bool) -> list[str]:
@@ -50,10 +52,14 @@ async def _fetch_versions(group_id: str, artifact_id: str, rows: int) -> list[st
     """
 
     client = get_client()
-    params = build_params_for_versions(group_id, artifact_id, rows)
+    params_mixed = build_params_for_versions(group_id, artifact_id, rows)
     # Only log operation, not full URL + params at info level
     _logger.info("querying maven central versions", extra={"op": "versions", "rows": rows})
-    data = await client.get_json(client._base_url, params=params)  # type: ignore[attr-defined]
+    # Avoid reaching into client private attributes; use configured Settings
+    base_url = Settings().MAVEN_CENTRAL_BASE_URL
+    # get_json expects Dict[str, str]; convert any int values to str for type safety
+    params: dict[str, str] = {k: str(v) for k, v in params_mixed.items()}
+    data = await client.get_json(base_url, params=params)
 
     # Expected shape per Maven Central: response.docs[] with fields incl. v (version)
     try:
@@ -99,7 +105,8 @@ async def get_latest_version_core(
     rows = max(1, min(int(max_versions_to_scan), 500))
 
     coord = MavenCoordinate(group_id=group_id, artifact_id=artifact_id)
-    cache_key = (coord.group_id, coord.artifact_id, bool(include_prereleases))
+    # Include the effective row limit in the cache key to avoid cross-contamination
+    cache_key = (coord.group_id, coord.artifact_id, bool(include_prereleases), rows)
 
     cached = await _versions_cache.get(cache_key)
     if cached is not None:
@@ -133,40 +140,33 @@ async def get_latest_version_core(
     return await _deduper.run(cache_key, _compute)
 
 
-# --- Optional FastMCP wiring ---
-try:  # Import lazily so unit tests don’t require FastMCP installed
-    from fastmcp import FastMCP
+_server = FastMCP("mcp-maven-central-search")
 
-    _server = FastMCP("mcp-maven-central-search")
 
-    @_server.tool()
-    async def get_latest_version(
-        group_id: str,
-        artifact_id: str,
-        include_prereleases: bool = False,
-        max_versions_to_scan: int = 200,
-    ) -> dict:
-        """Return the latest version for a Maven coordinate.
+@_server.tool()
+async def get_latest_version(
+    group_id: str,
+    artifact_id: str,
+    include_prereleases: bool = False,
+    max_versions_to_scan: int = 200,
+) -> dict:
+    """Return the latest version for a Maven coordinate.
 
-        This is the MCP-exposed wrapper around the core transport-neutral logic.
-        """
+    This is the MCP-exposed wrapper around the core transport-neutral logic.
+    """
 
-        result = await get_latest_version_core(
-            group_id=group_id,
-            artifact_id=artifact_id,
-            include_prereleases=include_prereleases,
-            max_versions_to_scan=max_versions_to_scan,
-        )
-        # Return as plain dict for MCP
-        return result.model_dump()
+    result = await get_latest_version_core(
+        group_id=group_id,
+        artifact_id=artifact_id,
+        include_prereleases=include_prereleases,
+        max_versions_to_scan=max_versions_to_scan,
+    )
+    # Return as plain dict for MCP
+    return result.model_dump()
 
-    def run() -> None:  # pragma: no cover
-        _server.run()
 
-except Exception:  # FastMCP not installed or unavailable
-    # Expose a no-op run to avoid import errors for tests.
-    def run() -> None:  # pragma: no cover
-        _logger.warning("FastMCP not available; server run() is a no-op", extra={"op": "noop"})
+def run() -> None:  # pragma: no cover
+    _server.run()
 
 
 __all__ = [
