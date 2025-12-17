@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Final, Optional, Any
+from typing import Any, Final, Optional
 
 import httpx
 
