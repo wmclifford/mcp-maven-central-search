@@ -3,6 +3,7 @@
 Spec reference:
 - PLANNING.md: Caching (cache.py)
 - Issue: #16, Work-Item: PLAN-4.1
+- Issue: #17, Work-Item: PLAN-4.2 (in-flight request deduplication)
 
 Notes:
 - In-memory only, async-safe via asyncio.Lock
@@ -16,7 +17,7 @@ import asyncio
 import time
 from collections import OrderedDict
 from dataclasses import dataclass
-from typing import Callable, Generic, MutableMapping, Optional, TypeVar
+from typing import Awaitable, Callable, Generic, MutableMapping, Optional, TypeVar
 
 K = TypeVar("K")
 V = TypeVar("V")
@@ -129,4 +130,60 @@ class AsyncTTLCache(Generic[K, V]):
             self._data.pop(oldest_key, None)
 
 
-__all__ = ["AsyncTTLCache"]
+class InFlightDeduper(Generic[K, V]):
+    """Deduplicate concurrent in-flight requests by key.
+
+    Semantics (PLAN-4.2):
+    - Only one underlying coroutine is created per key while it's running.
+    - All awaiters await the same shared task; cancellation of a waiter does
+      not cancel the underlying task (uses asyncio.shield).
+    - On success or failure, the in-flight entry is removed.
+    """
+
+    def __init__(self) -> None:
+        self._lock = asyncio.Lock()
+        self._inflight: dict[K, asyncio.Task[V]] = {}
+
+    async def run(self, key: K, coro_factory: Callable[[], Awaitable[V]]) -> V:
+        """Run or join an in-flight task for ``key``.
+
+        If a task for ``key`` is already running, this awaits it. Otherwise a
+        new task is created from ``coro_factory`` and registered atomically.
+
+        The shared task is awaited via ``asyncio.shield`` to prevent
+        cancellation propagation from an individual waiter.
+        """
+
+        async with self._lock:
+            task = self._inflight.get(key)
+            if task is None or task.done():
+                # Create and register a new task. Use a local wrapper so we can
+                # ensure cleanup of the in-flight map regardless of outcome.
+                async def _runner() -> V:
+                    return await coro_factory()
+
+                task = asyncio.create_task(_runner())
+
+                def _cleanup(_t: asyncio.Task[V]) -> None:  # runs in loop thread
+                    # Remove only if the current task is still the registered one
+                    # to avoid races where a new task was installed for the same key.
+                    if self._inflight.get(key) is _t:
+                        self._inflight.pop(key, None)
+
+                task.add_done_callback(_cleanup)
+                self._inflight[key] = task
+
+        # Await outside the lock to avoid blocking other keys.
+        try:
+            return await asyncio.shield(task)
+        except Exception:
+            # Exception is propagated to all awaiters; cleanup handled by callback.
+            raise
+
+    def has_inflight(self, key: K) -> bool:
+        """Introspection for tests: whether a non-done task is tracked for key."""
+        task = self._inflight.get(key)
+        return bool(task is not None and not task.done())
+
+
+__all__ = ["AsyncTTLCache", "InFlightDeduper"]
