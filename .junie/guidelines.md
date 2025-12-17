@@ -1,7 +1,21 @@
 # Junie Guidelines — wmclifford/mcp-maven-central-search
 
-You are a coding agent working in the repository **wmclifford/mcp-maven-central-search**. Use the GitHub MCP
-server tools to access the issue being referenced/worked on in this repository.
+You are a coding agent working in the repository **wmclifford/mcp-maven-central-search**.
+
+Use the GitHub MCP server tools **only for GitHub coordination tasks**, such as:
+
+- reading issues and PRs
+- posting comments
+- opening or updating PRs
+
+Use the **local filesystem and git CLI** for all code changes:
+
+- edit files locally
+- run formatting, linting, and tests locally
+- create commits using the local git repository
+- push branches via git
+
+Do NOT use GitHub MCP server tools to upload or modify source files unless explicitly instructed.
 
 ## Primary rules (must follow)
 
