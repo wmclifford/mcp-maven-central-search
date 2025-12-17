@@ -33,6 +33,7 @@ Do NOT use GitHub MCP server tools to upload or modify source files unless expli
     * Never write logs to stdout. Use stderr for logs. Do not add `print()` calls.
 4. **Quality gates**:
 
+    * Do not introduce non-ASCII whitespace or bidi control characters.
     * All Python code must be formatted using `ruff format`.
     * Do not commit Python code that fails:
 
@@ -55,6 +56,8 @@ Do NOT use GitHub MCP server tools to upload or modify source files unless expli
 
     * Create a feature branch for the issue work.
     * Commit to that branch.
+    * When calling `git commit` use multiple `-m` flags when adding multiple paragraphs of context; do not embed
+      `\n` in the commit message.
     * Push the branch to origin.
     * Open a PR unless explicitly instructed not to.
 * Do **not** close the GitHub Issue until the PR is merged into `main` and CI has passed.
