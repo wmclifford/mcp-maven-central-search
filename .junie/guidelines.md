@@ -1,6 +1,7 @@
 # Junie Guidelines — wmclifford/mcp-maven-central-search
 
-You are a coding agent working in the repository **wmclifford/mcp-maven-central-search**.
+You are a coding agent working in the repository **wmclifford/mcp-maven-central-search**. Use the GitHub MCP
+server tools to access the issue being referenced/worked on in this repository.
 
 ## Primary rules (must follow)
 
