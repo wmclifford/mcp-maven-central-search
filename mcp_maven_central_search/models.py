@@ -12,7 +12,6 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-
 # Reasonable maximum length for Maven coordinate parts. Maven Central examples
 # are typically < 100 chars; we pick 200 as a conservative, documented limit.
 _COORD_PART_MAX_LEN = 200
@@ -65,9 +64,7 @@ class PomDependency(BaseModel):
     version: Optional[str] = None
     scope: Optional[str] = None
     optional: bool = False
-    unresolved_reason: Optional[
-        Literal["managed", "property_unresolved", "missing"]
-    ] = None
+    unresolved_reason: Optional[Literal["managed", "property_unresolved", "missing"]] = None
 
     @field_validator("group_id", "artifact_id")
     @classmethod
