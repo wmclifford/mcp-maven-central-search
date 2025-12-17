@@ -105,6 +105,20 @@ constraints, and expected behavior.
 
 ---
 
+## EPIC 9 — Follow-ups & Technical Debt (Identified During Implementation)
+
+These items were identified during implementation as **non-blocking improvements** or **cleanup** needed to fully align
+the codebase with the original architecture and standards.
+
+| Issue ID | Title                                                 | Relevant `PLANNING.md` Sections                              | Notes                                                                                      |
+|----------|-------------------------------------------------------|--------------------------------------------------------------|--------------------------------------------------------------------------------------------|
+| 9.1      | Normalize POM downloads to use HTTP client public API | POM Parsing & Dependency Extraction; Maven Central API Usage | `pom.py` currently reaches into private HTTP client attributes; should use a public method |
+| 9.2      | Align MCP server cache configuration with Settings    | Configuration (`config.py`); Caching (`cache.py`)            | `server.py` hardcodes TTL/max entries instead of reading from `Settings`                   |
+| 9.3      | Harden Unicode / bidi character detection             | Development Standards; CI & Docker Expectations              | Add automated check (script or CI step) to prevent hidden unicode chars                    |
+| 9.4      | MCP tool error model consistency                      | MCP Tools (v1); Pydantic Models (`models.py`)                | Standardize tool error responses vs exceptions                                             |
+
+---
+
 ## Notes for Issue Authors and Reviewers
 
 * If an issue cannot be cleanly mapped to an existing `PLANNING.md` section, this indicates either:
