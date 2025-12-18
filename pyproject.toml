@@ -55,7 +55,7 @@ ignore = []
 
 # Pytest configuration
 [tool.pytest.ini_options]
-addopts = "-q --cov --cov-report=term-missing"
+addopts = "-q --cov=mcp_maven_central_search --cov-report=term-missing"
 testpaths = ["tests"]
 asyncio_mode = "auto"
 pythonpath = ["."]
@@ -66,7 +66,7 @@ branch = true
 source = ["mcp_maven_central_search"]
 
 [tool.coverage.report]
-fail_under = 0
+fail_under = 80
 show_missing = true
 skip_covered = true
 
