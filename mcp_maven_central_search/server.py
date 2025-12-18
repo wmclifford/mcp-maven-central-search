@@ -13,6 +13,7 @@ from __future__ import annotations
 import logging
 from typing import Optional, Tuple
 
+import httpx
 from fastmcp import FastMCP
 
 from .cache import AsyncTTLCache, InFlightDeduper
@@ -21,10 +22,13 @@ from .config import Settings
 from .logging_config import configure_logging
 from .models import (
     ArtifactVersionInfo,
+    DeclaredDependenciesResponse,
     LatestVersionResponse,
     MavenCoordinate,
+    PomDependency,
     VersionsResponse,
 )
+from .pom import download_pom, extract_declared_dependencies
 from .versioning import is_stable, sort_versions
 
 _logger = logging.getLogger(__name__)
@@ -50,6 +54,17 @@ _versions_list_cache: AsyncTTLCache[Tuple[str, str, bool, int], VersionsResponse
 _versions_list_deduper: InFlightDeduper[Tuple[str, str, bool, int], VersionsResponse] = (
     InFlightDeduper()
 )
+
+# Cache for declared dependencies (PLAN-5.4)
+_declared_deps_cache: AsyncTTLCache[
+    Tuple[str, str, str, bool, Tuple[str, ...]], DeclaredDependenciesResponse
+] = AsyncTTLCache(
+    default_ttl_seconds=_CACHE_TTL_SECONDS,
+    max_entries=_CACHE_MAX_ENTRIES,
+)
+_declared_deps_deduper: InFlightDeduper[
+    Tuple[str, str, str, bool, Tuple[str, ...]], DeclaredDependenciesResponse
+] = InFlightDeduper()
 
 
 def _filter_versions(versions: list[str], include_prereleases: bool) -> list[str]:
@@ -217,6 +232,109 @@ async def get_versions_core(
 _server = FastMCP("mcp-maven-central-search")
 
 
+def _normalize_scopes(scopes: Optional[list[str]]) -> Tuple[str, ...]:
+    """Normalize scopes list for deterministic behavior and cache key.
+
+    - None -> empty tuple (means include all scopes)
+    - Lowercase, strip, unique, sorted.
+    """
+    if not scopes:
+        return tuple()
+    norm = sorted({(s or "").strip().lower() for s in scopes if (s or "").strip()})
+    return tuple(norm)
+
+
+def _dep_sort_key(dep: PomDependency) -> Tuple[str, str, str]:
+    # Stable ordering: by (group_id, artifact_id, version or "")
+    return (dep.group_id, dep.artifact_id, dep.version or "")
+
+
+def _scope_for_filtering(scope: Optional[str]) -> str:
+    """Treat missing scope as 'compile' when filtering per PLAN-5.4."""
+    return (scope or "compile").strip().lower() or "compile"
+
+
+async def get_declared_dependencies_core(
+    *,
+    group_id: str,
+    artifact_id: str,
+    version: str,
+    include_optional: bool = True,
+    include_scopes: Optional[list[str]] = None,
+) -> DeclaredDependenciesResponse:
+    """Core logic for PLAN-5.4: declared dependencies for a specific version.
+
+    - Downloads the POM, parses declared dependencies.
+    - Applies optional filtering by 'optional' flag and scopes.
+    - Deterministically sorts results.
+    - Caches by (g,a,v, include_optional, normalized_scopes).
+    """
+
+    coord = MavenCoordinate(group_id=group_id, artifact_id=artifact_id)
+    scopes_key = _normalize_scopes(include_scopes)
+    cache_key = (coord.group_id, coord.artifact_id, version, bool(include_optional), scopes_key)
+
+    cached = await _declared_deps_cache.get(cache_key)
+    if cached is not None:
+        return cached
+
+    async def _compute() -> DeclaredDependenciesResponse:
+        # Download POM
+        try:
+            _logger.info(
+                "downloading POM for declared dependencies",
+                extra={
+                    "op": "get_declared_dependencies",
+                    "group_id": coord.group_id,
+                    "artifact_id": coord.artifact_id,
+                },
+            )
+            pom_xml = await download_pom(coord.group_id, coord.artifact_id, version)
+        except httpx.HTTPStatusError as e:
+            status = e.response.status_code if e.response is not None else None
+            if status == 404:
+                raise ValueError(
+                    f"POM not found for {coord.group_id}:{coord.artifact_id}:{version}"
+                )
+            # surface a generic message for other HTTP errors
+            raise ValueError(
+                f"Failed to download POM (status={status}) for "
+                f"{coord.group_id}:{coord.artifact_id}:{version}"
+            )
+        except Exception as e:
+            # Other download errors
+            raise ValueError(f"Failed to download POM: {e}")
+
+        # Parse dependencies
+        try:
+            deps = extract_declared_dependencies(pom_xml)
+        except Exception:
+            raise ValueError("Invalid POM XML")
+
+        # Filtering: include_optional flag
+        if not include_optional:
+            deps = [d for d in deps if not d.optional]
+
+        # Filtering: include_scopes if provided
+        if scopes_key:
+            allowed = set(scopes_key)
+            deps = [d for d in deps if _scope_for_filtering(d.scope) in allowed]
+
+        # Stable ordering
+        deps_sorted = sorted(deps, key=_dep_sort_key)
+
+        resp = DeclaredDependenciesResponse(
+            coordinate=coord,
+            version=version,
+            dependencies=deps_sorted,
+            caveats=[],
+        )
+        await _declared_deps_cache.set(cache_key, resp)
+        return resp
+
+    return await _declared_deps_deduper.run(cache_key, _compute)
+
+
 @_server.tool()
 async def get_latest_version(
     group_id: str,
@@ -260,6 +378,29 @@ async def get_versions(
     return result.model_dump()
 
 
+@_server.tool()
+async def get_declared_dependencies(
+    group_id: str,
+    artifact_id: str,
+    version: str,
+    include_optional: bool = True,
+    include_scopes: Optional[list[str]] = None,
+) -> dict:
+    """Return declared dependencies for the given coordinate and version.
+
+    Transport wrapper around get_declared_dependencies_core.
+    """
+
+    result = await get_declared_dependencies_core(
+        group_id=group_id,
+        artifact_id=artifact_id,
+        version=version,
+        include_optional=include_optional,
+        include_scopes=include_scopes,
+    )
+    return result.model_dump()
+
+
 def run() -> None:  # pragma: no cover
     _server.run()
 
@@ -267,5 +408,6 @@ def run() -> None:  # pragma: no cover
 __all__ = [
     "get_latest_version_core",
     "get_versions_core",
+    "get_declared_dependencies_core",
     "run",
 ]
