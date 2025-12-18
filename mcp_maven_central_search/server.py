@@ -298,7 +298,7 @@ async def get_declared_dependencies_core(
                 )
             # surface a generic message for other HTTP errors
             raise ValueError(
-                "Failed to download POM (status={status}) for "
+                f"Failed to download POM (status={status}) for "
                 f"{coord.group_id}:{coord.artifact_id}:{version}"
             )
         except Exception as e:
