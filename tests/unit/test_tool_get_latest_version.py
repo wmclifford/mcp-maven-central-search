@@ -18,7 +18,7 @@ def _mk_response(versions: list[str]) -> dict[str, Any]:
 async def test_latest_version_stable_default_picks_correct() -> None:
     # mix of stable and pre-release; stable default should pick highest stable
     with respx.mock(assert_all_called=True) as router:
-        route = router.get("https://search.maven.org/solrsearch/select").mock(
+        route = router.get("https://central.sonatype.com/solrsearch/select").mock(
             return_value=httpx.Response(
                 200,
                 json=_mk_response(
@@ -47,7 +47,7 @@ async def test_latest_version_stable_default_picks_correct() -> None:
 @pytest.mark.asyncio
 async def test_include_prereleases_can_select_prerelease_when_highest() -> None:
     with respx.mock(assert_all_called=True) as router:
-        router.get("https://search.maven.org/solrsearch/select").mock(
+        router.get("https://central.sonatype.com/solrsearch/select").mock(
             return_value=httpx.Response(
                 200,
                 json=_mk_response(
@@ -74,7 +74,7 @@ async def test_include_prereleases_can_select_prerelease_when_highest() -> None:
 @pytest.mark.asyncio
 async def test_no_results_returns_tool_error() -> None:
     with respx.mock(assert_all_called=True) as router:
-        router.get("https://search.maven.org/solrsearch/select").mock(
+        router.get("https://central.sonatype.com/solrsearch/select").mock(
             return_value=httpx.Response(200, json=_mk_response([]))
         )
 
@@ -96,7 +96,9 @@ async def test_caching_and_inflight_dedupe_reduce_calls() -> None:
         return httpx.Response(200, json=_mk_response(["0.9.0", "1.0.0", "1.0.1"]))
 
     with respx.mock(assert_all_called=True) as router:
-        route = router.get("https://search.maven.org/solrsearch/select").mock(side_effect=handler)
+        route = router.get("https://central.sonatype.com/solrsearch/select").mock(
+            side_effect=handler
+        )
 
         # Fire multiple concurrent identical requests
         tasks = [

@@ -108,10 +108,10 @@ Configuration is implemented using **pydantic-settings** and is fully overridabl
 
 * `MAVEN_CENTRAL_BASE_URL`
 
-    * Default: `https://search.maven.org/solrsearch/select`
+    * Default: `https://central.sonatype.com/solrsearch/select`
 * `MAVEN_CENTRAL_REMOTE_CONTENT_BASE_URL`
 
-    * Default: `https://search.maven.org/remotecontent`
+    * Default: `https://central.sonatype.com/remotecontent`
 * `HTTP_TIMEOUT_SECONDS`
 
     * Default: 10
