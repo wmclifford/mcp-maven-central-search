@@ -9,13 +9,13 @@ from mcp_maven_central_search.central_api import (
 
 def test_build_ga_query_basic():
     q = build_ga_query("org.apache.commons", "commons-lang3")
-    assert q == 'g:"org.apache.commons" AND a:"commons-lang3"'
+    assert q == "g:org.apache.commons AND a:commons-lang3"
 
 
 def test_build_ga_query_escaping_quotes_and_backslashes():
     q = build_ga_query('com.example"weird', r"art\ifact")
     # Expect embedded quote and backslash to be escaped inside the quoted literal
-    assert q == 'g:"com.example\\"weird" AND a:"art\\\\ifact"'
+    assert q == 'g:com.example\\"weird AND a:art\\\\ifact'
 
 
 def test_build_params_for_versions_contains_required_keys():
@@ -23,7 +23,7 @@ def test_build_params_for_versions_contains_required_keys():
     assert params["core"] == "gav"
     assert params["wt"] == "json"
     assert params["rows"] == 25
-    assert params["q"] == 'g:"g" AND a:"a"'
+    assert params["q"] == "g:g AND a:a"
     assert params["sort"] == "v desc"
 
 

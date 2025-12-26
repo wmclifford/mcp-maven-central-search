@@ -49,13 +49,13 @@ def build_ga_query(group_id: str, artifact_id: str) -> str:
     """Build the Solr `q` for group/artifact coordinate search.
 
     Example:
-        q = g:"com.example" AND a:"my-artifact"
+        q = g:com.example AND a:my-artifact
     """
     g = _validate_non_empty("group_id", group_id, _MAX_COORD_LEN)
     a = _validate_non_empty("artifact_id", artifact_id, _MAX_COORD_LEN)
     g_esc = _escape_for_solr_literal(g)
     a_esc = _escape_for_solr_literal(a)
-    return f'g:"{g_esc}" AND a:"{a_esc}"'
+    return f"g:{g_esc} AND a:{a_esc}"
 
 
 def build_params_for_versions(group_id: str, artifact_id: str, rows: int) -> dict[str, str | int]:
@@ -63,7 +63,7 @@ def build_params_for_versions(group_id: str, artifact_id: str, rows: int) -> dic
 
     Required keys:
       - core = gav
-      - q = g:"..." AND a:"..."
+      - q = g:... AND a:...
       - rows = <limit>
       - sort = v desc
       - wt = json
