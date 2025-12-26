@@ -24,11 +24,12 @@ def test_build_params_for_versions_contains_required_keys():
     assert params["wt"] == "json"
     assert params["rows"] == 25
     assert params["q"] == 'g:"g" AND a:"a"'
+    assert params["sort"] == "v desc"
 
 
 def test_build_params_for_search_contains_required_keys():
     params = build_params_for_search("kotlin coroutine", 10)
-    assert params == {"q": "kotlin coroutine", "rows": 10, "wt": "json"}
+    assert params == {"q": "kotlin coroutine", "rows": 10, "wt": "json", "sort": "v desc"}
 
 
 @pytest.mark.parametrize(

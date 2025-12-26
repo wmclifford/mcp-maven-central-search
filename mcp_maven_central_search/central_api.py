@@ -65,6 +65,7 @@ def build_params_for_versions(group_id: str, artifact_id: str, rows: int) -> dic
       - core = gav
       - q = g:"..." AND a:"..."
       - rows = <limit>
+      - sort = v desc
       - wt = json
     """
     if not isinstance(rows, int) or rows <= 0:
@@ -74,6 +75,7 @@ def build_params_for_versions(group_id: str, artifact_id: str, rows: int) -> dic
         "q": build_ga_query(group_id, artifact_id),
         "rows": rows,
         "wt": "json",
+        "sort": "v desc",
     }
     return params
 
@@ -89,7 +91,7 @@ def build_params_for_search(query: str, rows: int) -> dict[str, str | int]:
     q = _validate_non_empty("query", query, _MAX_QUERY_LEN)
     if not isinstance(rows, int) or rows <= 0:
         raise ValueError("rows must be a positive integer")
-    return {"q": q, "rows": rows, "wt": "json"}
+    return {"q": q, "rows": rows, "wt": "json", "sort": "v desc"}
 
 
 _logger = logging.getLogger(__name__)
