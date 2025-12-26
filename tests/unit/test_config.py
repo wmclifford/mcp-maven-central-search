@@ -5,7 +5,7 @@ from mcp_maven_central_search.config import Settings
 
 def test_defaults_representative_fields():
     s = Settings()
-    assert s.MAVEN_CENTRAL_BASE_URL == "https://search.maven.org/solrsearch/select"
+    assert s.MAVEN_CENTRAL_BASE_URL == "https://central.sonatype.com/solrsearch/select"
     assert s.HTTP_TIMEOUT_SECONDS == 10
     assert s.CACHE_ENABLED is True
     assert s.LOG_LEVEL == "INFO"
@@ -37,6 +37,6 @@ def test_env_isolation(monkeypatch: pytest.MonkeyPatch):
         monkeypatch.delenv(key, raising=False)
 
     s = Settings()
-    assert s.MAVEN_CENTRAL_BASE_URL == "https://search.maven.org/solrsearch/select"
+    assert s.MAVEN_CENTRAL_BASE_URL == "https://central.sonatype.com/solrsearch/select"
     assert s.HTTP_TIMEOUT_SECONDS == 10
     assert s.CACHE_ENABLED is True

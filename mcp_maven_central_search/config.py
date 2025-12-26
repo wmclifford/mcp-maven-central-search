@@ -25,8 +25,8 @@ class Settings(BaseSettings):
     """
 
     # Maven Central endpoints
-    MAVEN_CENTRAL_BASE_URL: str = "https://search.maven.org/solrsearch/select"
-    MAVEN_CENTRAL_REMOTE_CONTENT_BASE_URL: str = "https://search.maven.org/remotecontent"
+    MAVEN_CENTRAL_BASE_URL: str = "https://central.sonatype.com/solrsearch/select"
+    MAVEN_CENTRAL_REMOTE_CONTENT_BASE_URL: str = "https://central.sonatype.com/remotecontent"
 
     # HTTP behavior
     HTTP_TIMEOUT_SECONDS: int = Field(default=10, ge=1)
